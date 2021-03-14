@@ -49,3 +49,43 @@ resource "azurerm_linux_virtual_machine" "vm_mySQL" {
                     azurerm_network_interface.nic_aula_db, 
                     azurerm_storage_account.storage_atividade_db ]
 }
+
+
+resource "azurerm_public_ip" "publicip_mysqlserver" {
+    name                         = "myPublicIPAnsible"
+    location                     = var.location
+    resource_group_name          = azurerm_resource_group.rg.name
+    allocation_method            = "Static"
+    idle_timeout_in_minutes = 30
+
+    tags = {
+        environment = "aula infra"
+    }
+
+    depends_on = [ azurerm_resource_group.rg ]
+}
+
+
+data "azurerm_public_ip" "ip_mysqlserver" {
+  name                = azurerm_public_ip.publicip_mysqlserver.name
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
+
+resource "null_resource" "deploy" {
+    provisioner "remote-exec" {
+        connection {
+            type = "ssh"
+            user = var.user
+            password = var.password
+            host = data.azurerm_public_ip.ip_mysqlserver.ip_address
+        }
+        inline = [
+            "sudo apt-get update",
+            "sudo apt-get install -y mysql-server-5.7",
+            "service mysql restart"            
+        ]
+    }
+}
+
+#            "cat /mysql/mysqld.cnf > /etc/mysql/mysql.conf.d/mysqld.cnf",
