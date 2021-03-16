@@ -1,3 +1,3 @@
 user = "azureuser"
-password = "teste@123"
+password = "godofw@r35"
 location = "eastus"

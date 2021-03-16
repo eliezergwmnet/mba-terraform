@@ -1,0 +1,90 @@
+---
+  - name: "Instalar MySQL"
+    apt:
+      update_cache: yes
+      cache_valid_time: 3600
+      name: ["mysql-server-5.7", "python3-pymysql"]
+      state: latest
+    become: yes
+  
+  - name: "Garantir serviço MySQL rodando"
+    service:
+      name: mysql
+      state: started
+      enabled: True
+    become: yes
+    
+  - name: "Alterar a senha do root MySQL"
+    mysql_user:
+      name: root
+      host: "{{ item }}"
+      login_unix_socket: /var/run/mysqld/mysqld.sock
+      password: "{{ mysql.root_db_password }}"
+      priv: '*.*:ALL,GRANT'
+      check_implicit_admin: true
+    loop: "{{ mysql.hosts }}"
+    become: yes
+    notify:
+      - restart mysql
+
+  - name: "Criar arquivo de credenciais do root"
+    template:
+      src:  my.cnf.j2
+      dest: /root/.my.cnf
+      owner: root
+      mode: 0600
+    become: yes
+    notify:
+      - restart mysql
+
+  - name: "Criar usuário banco de dados"
+    mysql_user: 
+      login_user: root
+      login_password: "{{ mysql.root_db_password }}"
+      login_unix_socket: /var/run/mysqld/mysqld.sock
+      name: "{{ mysql.user_app }}"
+      password: "{{ mysql.password_app }}"
+      priv: "*.*:ALL"
+      host: "%"
+      state: present
+
+  - name: "Criar banco de dados"
+    mysql_db:
+      login_user: root
+      login_password: "{{ mysql.root_db_password }}"
+      login_unix_socket: /var/run/mysqld/mysqld.sock
+      name: "{{ mysql.db_name }}"
+      state: present
+    become: yes
+
+  - name: "Copiar scripts de banco"
+    copy:
+      src: "files/script"
+      dest: "/home/azureuser"
+    become: yes
+
+  - name: "Criar tabelas no banco"
+    mysql_db:
+      login_user: root
+      login_password: "{{ mysql.root_db_password }}"
+      login_unix_socket: /var/run/mysqld/mysqld.sock
+      state: import
+      name: "{{ mysql.db_name }}"
+      target: "/home/azureuser/script/schema.sql"
+
+  - name: "Popular tabelas no banco"
+    mysql_db:
+      login_user: root
+      login_password: "{{ mysql.root_db_password }}"
+      login_unix_socket: /var/run/mysqld/mysqld.sock
+      state: import
+      name: "{{ mysql.db_name }}"
+      target: "/home/azureuser/script/data.sql"
+
+  - name: "Configurar MySQL para aceitar conexões remotas"
+    copy:
+      src: "files/mysqld.cnf"
+      dest: "/etc/mysql/mysql.conf.d/mysqld.cnf"
+    become: yes
+    notify:
+      - restart mysql

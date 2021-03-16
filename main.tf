@@ -18,6 +18,6 @@ resource "azurerm_resource_group" "rg" {
     location = var.location
 
     tags = {
-        environment = "aula infra"
+        environment = "atividade02 infra"
     }  
 }

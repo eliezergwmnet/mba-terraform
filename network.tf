@@ -1,27 +1,27 @@
-resource "azurerm_virtual_network" "vnet_aula" {
+resource "azurerm_virtual_network" "vnet_atividade" {
     name                = "myVnet"
     address_space       = ["10.80.0.0/16"]
     location            = var.location
     resource_group_name = azurerm_resource_group.rg.name
 
     tags = {
-        environment = "aula infra"
+        environment = "atividade02 infra"
     }
 
     depends_on = [ azurerm_resource_group.rg ]
 }
 
-resource "azurerm_subnet" "subnet_aula" {
+resource "azurerm_subnet" "subnet_atividade" {
     name                 = "mySubnet"
     resource_group_name  = azurerm_resource_group.rg.name
-    virtual_network_name = azurerm_virtual_network.vnet_aula.name
+    virtual_network_name = azurerm_virtual_network.vnet_atividade.name
     address_prefixes       = ["10.80.4.0/24"]
 
     depends_on = [  azurerm_resource_group.rg, 
-                    azurerm_virtual_network.vnet_aula ]
+                    azurerm_virtual_network.vnet_atividade ]
 }
 
-resource "azurerm_network_security_group" "sg_aula" {
+resource "azurerm_network_security_group" "sg_atividade" {
     name                = "myNetworkSecurityGroup"
     location            = var.location
     resource_group_name = azurerm_resource_group.rg.name
@@ -52,7 +52,7 @@ resource "azurerm_network_security_group" "sg_aula" {
 
     security_rule {
         name                       = "mysql"
-        priority                   = 100
+        priority                   = 1003
         direction                  = "Inbound"
         access                     = "Allow"
         protocol                   = "Tcp"
@@ -63,7 +63,7 @@ resource "azurerm_network_security_group" "sg_aula" {
     }    
     
     tags = {
-        environment = "aula infra"
+        environment = "atividade02 infra"
     }
 
     depends_on = [ azurerm_resource_group.rg ]
